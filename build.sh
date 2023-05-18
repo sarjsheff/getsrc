@@ -1,0 +1,1 @@
+npx tailwindcss -i ./main.css -o ./static/css/getsrc.css

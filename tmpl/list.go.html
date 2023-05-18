@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+
+{{template "head"}}
+
+<body>
+    {{template "header"}}
+    <div class="container max-w-screen-xl mx-auto pt-2 pb-2">
+        <div class="pb-2">Репозитории</div>
+        <div class="grid gap-4 grid-cols-2">
+
+        {{ range $name, $el := .Repos }}
+        <a href="/git/{{$name}}/" class="p-6 bg-white border border-gray-200 rounded-lg shadow hover:bg-gray-100 gap-2">
+            <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{{$name}}</h5>
+            <p class="font-normal text-gray-700 dark:text-gray-400">{{$el.Description}}</p>
+        </a>
+        {{end}}
+        </div>
+        {{template "footer" .}}
+    </div>
+    
+</body>
+</html>

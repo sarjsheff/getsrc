@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+
+{{template "head"}}
+
+<body>
+    {{template "header"}}
+    
+    <div class="container max-w-screen-xl mx-auto pt-2 pb-2">
+        {{template "nav" .}}
+        {{ $root := .}}
+        {{with .Repo}}
+        <div class="py-2 flex flex-row">
+            <div class="flex flex-row p-2 px-4 mr-4 bg-slate-100 rounded-md border">
+                {{template "IBranch"}} <div class="pl-1">{{.Repo.Head.Name.Short}}</div>
+            </div>
+            <div class="flex flex-row p-2 mr-4 ">
+                {{template "IBranch"}} <div class="pl-1"><strong>{{len ( .ToList .Repo.Branches )}}</strong> branches</div>
+            </div>
+            <div class="flex flex-row p-2">
+                {{template "ITags"}} <div class="pl-1"><strong>{{len ( .ToList .Repo.Tags )}}</strong> tags</div>
+            </div>
+        </div>
+
+        <div class="border rounded shadow">
+            <div class="bg-slate-100 flex flex-row p-2 items-center">
+                {{ $head := .Repo.CommitObject .Repo.Head.Hash }}
+                
+                <!-- <div class="w-[32px] h-[32px] bg-slate-200 rounded-full items-center justify-center flex"> -->
+                    <!-- {{template "IAccount"}} -->
+                <!-- </div> -->
+                <a href="https://www.gravatar.com/{{ $root.MD5 $head.Author.Email }}">
+                    <img class="w-[32px] h-[32px] bg-slate-200 rounded-full" src="https://www.gravatar.com/avatar/{{ $root.MD5 $head.Author.Email }}"/>
+                </a>
+                
+                <a class="pl-2 grow" href="https://www.gravatar.com/{{ $root.MD5 $head.Author.Email }}">
+                    {{$head.Author.Name}}
+                </a>
+                
+                <div>{{$root.SinceHuman $head.Author.When}}</div>
+                
+                {{/* <div>{{.CommitCount}}</div>*/}}
+            </div>
+            {{ range $idx, $el :=  .Files }}
+                <div class="border-t flex flex-row p-2">
+                <div class="w-8">{{if .Mode.IsFile }}{{template "IFile"}}{{else}}{{template "IFolder"}}{{end}}</div>
+                {{.Name}}
+                </div>
+            {{end}}
+        </div>
+        {{end}}
+        {{template "footer" .}}
+    </div>
+</body>
+
+</html>
