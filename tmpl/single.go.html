@@ -1,25 +1,28 @@
 <!doctype html>
 <html>
 
-{{template "head"}}
+{{template "head" .}}
 
 <body>
-    {{template "header"}}
+    {{template "header" .}}
     
-    <div class="container max-w-screen-xl mx-auto pt-2 pb-2">
+    <div class="container max-w-screen-xl mx-auto pt-2 pb-2 px-4">
         {{template "nav" .}}
         {{ $root := .}}
         {{with .Repo}}
-        <div class="py-2 flex flex-row">
+        <div class="py-2 flex flex-row flex-wrap gap-2">
             <div class="flex flex-row p-2 px-4 mr-4 bg-slate-100 rounded-md border">
                 {{template "IBranch"}} <div class="pl-1">{{.Repo.Head.Name.Short}}</div>
             </div>
             <div class="flex flex-row p-2 mr-4 ">
-                {{template "IBranch"}} <div class="pl-1"><strong>{{len ( .ToList .Repo.Branches )}}</strong> branches</div>
+                {{template "IBranch"}} <div class="pl-1"><strong>{{len ( .ToList .Repo.Branches )}}</strong><span class="inline"> branches</span></div>
             </div>
             <div class="flex flex-row p-2">
-                {{template "ITags"}} <div class="pl-1"><strong>{{len ( .ToList .Repo.Tags )}}</strong> tags</div>
+                {{template "ITags"}} <div class="pl-1"><strong>{{len ( .ToList .Repo.Tags )}}</strong><span class="inline"> tags</span></div>
             </div>
+            <div class="grow"></div>
+            <div class="w-full md:w-auto shadow appearance-none border rounded px-3 py-3 text-gray-700 leading-tight items-center flex whitespace-nowrap">git clone {{$root.Config.Cloneurl}}/git/{{.Name}}</div>
+            <!-- <input class="shadow appearance-none border rounded px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value="git clone {{$root.Config.Cloneurl}}/git/{{.Name}}"/> -->
         </div>
 
         <div class="border rounded shadow">

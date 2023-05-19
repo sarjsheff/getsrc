@@ -12,7 +12,9 @@ type ConfigRepo struct {
 }
 
 type Config struct {
-	Repos *map[string]ConfigRepo `yaml:"repos"`
+	Repos    *map[string]ConfigRepo `yaml:"repos"`
+	Cloneurl string                 `yaml:"cloneurl"`
+	Title    string                 `yaml:"title"`
 }
 
 func NewConfig(configPath string) (*Config, error) {
@@ -28,6 +30,13 @@ func NewConfig(configPath string) (*Config, error) {
 
 	if err := d.Decode(&config); err != nil {
 		return nil, err
+	}
+
+	if config.Cloneurl == "" {
+		config.Cloneurl = "http://localhost:8080"
+	}
+	if config.Title == "" {
+		config.Title = "GetSrc"
 	}
 
 	return config, nil

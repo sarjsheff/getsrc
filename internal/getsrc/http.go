@@ -16,16 +16,18 @@ import (
 )
 
 type HttpObject struct {
-	Repo  *Repo
-	Repos *map[string]ConfigRepo
-	Start time.Time
+	Repo   *Repo
+	Repos  *map[string]ConfigRepo
+	Start  time.Time
+	Config *Config
 }
 
-func NewHttpObject(Repos *map[string]ConfigRepo, Repo *Repo) *HttpObject {
+func NewHttpObject(Repos *map[string]ConfigRepo, Repo *Repo, config *Config) *HttpObject {
 	ret := &HttpObject{
-		Start: time.Now(),
-		Repos: Repos,
-		Repo:  Repo,
+		Start:  time.Now(),
+		Repos:  Repos,
+		Repo:   Repo,
+		Config: config,
 	}
 	return ret
 }
@@ -57,7 +59,7 @@ func (o *HttpObject) ExecTime() time.Duration {
 	return time.Since(o.Start)
 }
 
-func RegDumbHTTPRepo(name string, repopath string) {
+func RegDumbHTTPRepo(name string, repopath string, config *Config) {
 	repo, err := NewRepo(name, repopath)
 	if err != nil {
 		log.Println(err)
@@ -105,14 +107,14 @@ func RegDumbHTTPRepo(name string, repopath string) {
 				}
 
 			} else {
-				tmpls, err := template.ParseFiles("./tmpl/single.go.html", "./tmpl/icons.go.html", "./tmpl/common.go.html")
+				tmpls, err := template.ParseFiles("./tmpl/single.go.html", "./tmpl/icons.go.html", "./tmpl/common.go.html", "./tmpl/gen.go.html")
 				if err != nil {
 					log.Println(err)
 					w.WriteHeader(500)
 					return
 				}
 
-				err = tmpls.Execute(w, NewHttpObject(nil, repo))
+				err = tmpls.Execute(w, NewHttpObject(nil, repo, config))
 				if err != nil {
 					log.Println(err)
 					w.WriteHeader(500)

@@ -16,20 +16,20 @@ func main() {
 	}
 
 	for k, v := range *config.Repos {
-		getsrc.RegDumbHTTPRepo(k, v.Path)
+		getsrc.RegDumbHTTPRepo(k, v.Path, config)
 	}
 
 	http.Handle("/css/", http.FileServer(http.Dir("static")))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		tmpls, err := template.ParseFiles("./tmpl/list.go.html", "./tmpl/icons.go.html", "./tmpl/common.go.html")
+		tmpls, err := template.ParseFiles("./tmpl/list.go.html", "./tmpl/icons.go.html", "./tmpl/common.go.html", "./tmpl/gen.go.html")
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)
 			return
 		}
 
-		err = tmpls.Execute(w, getsrc.NewHttpObject(config.Repos, nil))
+		err = tmpls.Execute(w, getsrc.NewHttpObject(config.Repos, nil, config))
 		if err != nil {
 			log.Println(err)
 			w.WriteHeader(500)
