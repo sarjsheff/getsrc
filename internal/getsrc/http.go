@@ -121,7 +121,7 @@ func (h *HTTP) RegDumbHTTPRepo(name string, repopath string, config *Config) {
 	contextUrl := "/git/" + name + "/"
 
 	http.HandleFunc(contextUrl, func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Git-Protocol") != "" {
+		if strings.HasPrefix(r.Header.Get("User-Agent"), "git") {
 			if p, ok := strings.CutPrefix(r.URL.Path, contextUrl); ok {
 				if p == "info/refs" {
 					it, err := repo.Repo.References()
