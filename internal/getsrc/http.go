@@ -1,6 +1,7 @@
 package getsrc
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"log"
@@ -11,8 +12,16 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/alecthomas/chroma/formatters/html"
 	"github.com/dustin/go-humanize"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/yuin/goldmark"
+	highlighting "github.com/yuin/goldmark-highlighting"
+	meta "github.com/yuin/goldmark-meta"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	htmlgold "github.com/yuin/goldmark/renderer/html"
+	"go.abhg.dev/goldmark/mermaid"
 )
 
 type HttpObject struct {
@@ -61,6 +70,45 @@ func (o *HttpObject) SinceHuman(t time.Time) string {
 
 func (o *HttpObject) ExecTime() time.Duration {
 	return time.Since(o.Start)
+}
+
+// Конвертация markdown
+func (o *HttpObject) ToHtml(content string) string {
+	markdown := goldmark.New(
+		goldmark.WithExtensions(
+			extension.Table,
+			extension.Strikethrough,
+			extension.Linkify,
+			extension.TaskList,
+			extension.GFM,
+			extension.DefinitionList,
+			extension.Footnote,
+			extension.Typographer,
+			extension.CJK,
+			meta.Meta,
+			&mermaid.Extender{},
+			// &pikchr.Extender{},
+			highlighting.NewHighlighting(
+				highlighting.WithStyle("manni"),
+				highlighting.WithFormatOptions(
+					html.WithLineNumbers(true),
+				),
+			),
+		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+		goldmark.WithRendererOptions(
+			htmlgold.WithUnsafe(),
+		),
+	)
+	context := parser.NewContext()
+	var buf bytes.Buffer
+	if err := markdown.Convert([]byte(content), &buf, parser.WithContext(context)); err != nil {
+		return ""
+	}
+
+	return buf.String()
 }
 
 type HTTP struct {

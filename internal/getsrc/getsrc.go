@@ -20,6 +20,7 @@ type GitObject struct {
 	IsFile  bool
 	Files   []object.TreeEntry
 	Repo    *Repo
+	Readme  string
 }
 
 type Repo struct {
@@ -86,6 +87,12 @@ func (rr *Repo) GetGitObject(subpath string) *GitObject {
 			if ff, err := tree.Tree(subpath); err == nil {
 				ret.Files = ff.Entries
 				ret.IsFound = true
+
+				if readme, err := ff.File("README.md"); err == nil {
+					if readme.Size < 10*1024*1024 {
+						ret.Readme, _ = readme.Contents()
+					}
+				}
 			} else {
 				log.Println(err)
 				ret.IsFound = false
@@ -93,6 +100,12 @@ func (rr *Repo) GetGitObject(subpath string) *GitObject {
 			}
 		} else {
 			ret.IsFound = true
+
+			if readme, err := tree.File("README.md"); err == nil {
+				if readme.Size < 10*1024*1024 {
+					ret.Readme, _ = readme.Contents()
+				}
+			}
 		}
 		sort.Sort(ByName(ret.Files))
 	}

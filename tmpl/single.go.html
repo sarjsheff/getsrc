@@ -57,6 +57,12 @@
                 {{end}}
             {{end}}
         </div>
+
+        {{if $git.Readme }}
+        <div class="border rounded shadow mt-4 p-4 readme">
+            {{$root.ToHtml $git.Readme}}
+        </div>
+        {{end}}
         {{end}}
         {{template "footer" .}}
     </div>

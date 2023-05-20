@@ -1,3 +1,40 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+
+    .readme p {
+            @apply py-2;        
+    }
+
+    .readme h1 {
+        @apply text-3xl mb-3 font-bold;
+      }
+    .readme h2 {
+        @apply text-2xl mb-3 font-bold;
+      }
+      .readme h3 {
+        @apply text-lg mb-3 font-bold;
+      }
+      .readme h4 {
+          @apply text-base mb-3 font-bold;
+      }
+      .readme h5 {
+          @apply text-base mb-3 font-bold;
+      }
+      .readme h6 {
+          @apply text-sm mb-3 font-bold;
+      }
+      
+    .readme a {
+        @apply text-blue-600;
+    }    
+
+    pre {
+        @apply pt-3 pb-3 px-2 rounded-xl text-slate-900 mb-3 bg-slate-50 shadow-inner overflow-x-auto text-sm;
+    }
+    .mermaid {
+        @apply bg-inherit ring-0 mx-auto flex justify-center;
+    }
+}
