@@ -7,8 +7,9 @@
     {{template "header" .}}
     
     <div class="container max-w-screen-xl mx-auto pt-2 pb-2 px-4">
-        {{template "nav" .}}
+        {{ $git := .Repo.GetGitObject .SubPath }}
         {{ $root := .}}
+        {{template "nav" $git}}
         {{with .Repo}}
         <div class="py-2 flex flex-row flex-wrap gap-2">
             <div class="flex flex-row p-2 px-4 mr-4 bg-slate-100 rounded-md border">
@@ -22,16 +23,16 @@
             </div>
             <div class="grow"></div>
             <div class="w-full md:w-auto shadow appearance-none border rounded px-3 py-3 text-gray-700 leading-tight items-center flex whitespace-nowrap">git clone {{$root.Config.Cloneurl}}/git/{{.Name}}</div>
-            <!-- <input class="shadow appearance-none border rounded px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value="git clone {{$root.Config.Cloneurl}}/git/{{.Name}}"/> -->
         </div>
 
         <div class="border rounded shadow">
             <div class="bg-slate-100 flex flex-row p-2 items-center">
                 {{ $head := .Repo.CommitObject .Repo.Head.Hash }}
                 
-                <!-- <div class="w-[32px] h-[32px] bg-slate-200 rounded-full items-center justify-center flex"> -->
-                    <!-- {{template "IAccount"}} -->
-                <!-- </div> -->
+                {{/* <div class="w-[32px] h-[32px] bg-slate-200 rounded-full items-center justify-center flex">
+                    {{template "IAccount"}}
+                </div> */}}
+
                 <a href="https://www.gravatar.com/{{ $root.MD5 $head.Author.Email }}">
                     <img class="w-[32px] h-[32px] bg-slate-200 rounded-full" src="https://www.gravatar.com/avatar/{{ $root.MD5 $head.Author.Email }}"/>
                 </a>
@@ -39,16 +40,21 @@
                 <a class="pl-2 grow" href="https://www.gravatar.com/{{ $root.MD5 $head.Author.Email }}">
                     {{$head.Author.Name}}
                 </a>
-                
+                <div class="grow"></div>
                 <div>{{$root.SinceHuman $head.Author.When}}</div>
                 
-                {{/* <div>{{.CommitCount}}</div>*/}}
+                {{/* <div>{{.CommitCount}}</div> */}}
             </div>
-            {{ range $idx, $el :=  .Files }}
-                <div class="border-t flex flex-row p-2">
-                <div class="w-8">{{if .Mode.IsFile }}{{template "IFile"}}{{else}}{{template "IFolder"}}{{end}}</div>
-                {{.Name}}
-                </div>
+            
+            {{ if $git.IsFile }}
+            <div class="w-full grow flex flex-row items-center border-t justify-center p-4">{{$git.Name}}</div>
+            {{else}}
+                {{ range $idx, $el := $git.Files }}
+                    <a href="{{.Name}}{{if .Mode.IsFile }}{{else}}/{{end}}" class="border-t flex flex-row p-2 hover:bg-gray-100 cursor-pointer">
+                    <div class="w-8">{{if .Mode.IsFile }}{{template "IFile"}}{{else}}{{template "IFolder"}}{{end}}</div>
+                    {{.Name}}
+                    </a>
+                {{end}}
             {{end}}
         </div>
         {{end}}

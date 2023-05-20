@@ -16,18 +16,20 @@ import (
 )
 
 type HttpObject struct {
-	Repo   *Repo
-	Repos  *map[string]ConfigRepo
-	Start  time.Time
-	Config *Config
+	Repo    *Repo
+	Repos   *map[string]ConfigRepo
+	Start   time.Time
+	Config  *Config
+	SubPath string
 }
 
-func NewHttpObject(Repos *map[string]ConfigRepo, Repo *Repo, config *Config) *HttpObject {
+func NewHttpObject(Repos *map[string]ConfigRepo, Repo *Repo, config *Config, subpath string) *HttpObject {
 	ret := &HttpObject{
-		Start:  time.Now(),
-		Repos:  Repos,
-		Repo:   Repo,
-		Config: config,
+		Start:   time.Now(),
+		Repos:   Repos,
+		Repo:    Repo,
+		Config:  config,
+		SubPath: subpath,
 	}
 	return ret
 }
@@ -59,7 +61,48 @@ func (o *HttpObject) ExecTime() time.Duration {
 	return time.Since(o.Start)
 }
 
-func RegDumbHTTPRepo(name string, repopath string, config *Config) {
+type HTTP struct {
+	singleTmpl *template.Template
+	listTmpl   *template.Template
+	config     *Config
+}
+
+func NewHTTP(config *Config) (*HTTP, error) {
+	ret := &HTTP{config: config}
+
+	tmpls, err := template.ParseFiles("./tmpl/single.go.html", "./tmpl/icons.go.html", "./tmpl/common.go.html", "./tmpl/gen.go.html")
+	if err != nil {
+		return nil, err
+	}
+	ret.singleTmpl = tmpls
+
+	tmpls, err = template.ParseFiles("./tmpl/list.go.html", "./tmpl/icons.go.html", "./tmpl/common.go.html", "./tmpl/gen.go.html")
+	if err != nil {
+		return nil, err
+	}
+	ret.listTmpl = tmpls
+
+	for k, v := range *config.Repos {
+		ret.RegDumbHTTPRepo(k, v.Path, config)
+	}
+
+	http.Handle("/css/", http.FileServer(http.Dir("static")))
+
+	http.HandleFunc("/", ret.ListHandler)
+
+	return ret, nil
+}
+
+func (h *HTTP) ListHandler(w http.ResponseWriter, r *http.Request) {
+	err := h.listTmpl.Execute(w, NewHttpObject(h.config.Repos, nil, h.config, ""))
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(500)
+		return
+	}
+}
+
+func (h *HTTP) RegDumbHTTPRepo(name string, repopath string, config *Config) {
 	repo, err := NewRepo(name, repopath)
 	if err != nil {
 		log.Println(err)
@@ -69,52 +112,49 @@ func RegDumbHTTPRepo(name string, repopath string, config *Config) {
 	contextUrl := "/git/" + name + "/"
 
 	http.HandleFunc(contextUrl, func(w http.ResponseWriter, r *http.Request) {
-		if p, ok := strings.CutPrefix(r.URL.Path, contextUrl); ok {
-			if p == "info/refs" {
-				it, err := repo.Repo.References()
-				if err == nil {
-					ref, err := it.Next()
-					for err == nil {
-						if ref.Type() == 1 {
-							fmt.Fprintf(w, "%s\t%s\n", ref.Hash().String(), ref.Name())
-						}
-						ref, err = it.Next()
-					}
-				}
-			} else if p == "HEAD" {
-				h, err := repo.Repo.Head()
-				if err == nil {
-					fmt.Fprintf(w, "ref: %s", h.Name())
-				}
-			} else if strings.HasPrefix(p, "objects") {
-				if cfg, err := repo.Repo.Config(); err == nil {
-					prefix := ".git"
-					if cfg.Core.IsBare {
-						prefix = ""
-					}
-					if ss, ok := strings.CutPrefix(p, "objects/"); ok {
-						if repo.Repo.Storer.HasEncodedObject(plumbing.NewHash(strings.ReplaceAll(ss, "/", ""))) == nil {
-							bt, err := os.ReadFile(path.Join(repopath, prefix, p))
-							if err == nil {
-								w.Write(bt)
-							} else {
-								log.Println(err)
+		if r.Header.Get("Git-Protocol") != "" {
+			if p, ok := strings.CutPrefix(r.URL.Path, contextUrl); ok {
+				if p == "info/refs" {
+					it, err := repo.Repo.References()
+					if err == nil {
+						ref, err := it.Next()
+						for err == nil {
+							if ref.Type() == 1 {
+								fmt.Fprintf(w, "%s\t%s\n", ref.Hash().String(), ref.Name())
 							}
+							ref, err = it.Next()
+						}
+					}
+				} else if p == "HEAD" {
+					h, err := repo.Repo.Head()
+					if err == nil {
+						fmt.Fprintf(w, "ref: %s", h.Name())
+					}
+				} else if strings.HasPrefix(p, "objects") {
+					if cfg, err := repo.Repo.Config(); err == nil {
+						prefix := ".git"
+						if cfg.Core.IsBare {
+							prefix = ""
+						}
+						if ss, ok := strings.CutPrefix(p, "objects/"); ok {
+							if repo.Repo.Storer.HasEncodedObject(plumbing.NewHash(strings.ReplaceAll(ss, "/", ""))) == nil {
+								bt, err := os.ReadFile(path.Join(repopath, prefix, p))
+								if err == nil {
+									w.Write(bt)
+								} else {
+									log.Println(err)
+								}
+							}
+
 						}
 
 					}
 
 				}
-
-			} else {
-				tmpls, err := template.ParseFiles("./tmpl/single.go.html", "./tmpl/icons.go.html", "./tmpl/common.go.html", "./tmpl/gen.go.html")
-				if err != nil {
-					log.Println(err)
-					w.WriteHeader(500)
-					return
-				}
-
-				err = tmpls.Execute(w, NewHttpObject(nil, repo, config))
+			}
+		} else {
+			if p, ok := strings.CutPrefix(r.URL.Path, contextUrl); ok {
+				err = h.singleTmpl.Execute(w, NewHttpObject(nil, repo, config, p))
 				if err != nil {
 					log.Println(err)
 					w.WriteHeader(500)
