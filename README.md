@@ -30,3 +30,9 @@ repos:
   myrepo: 
     path: "/tmp/mygitrepo"
 ```
+
+Docker:
+
+```
+docker run -it --rm --platform linux/amd64 -v /tmp/gitrepos:/repos -v $(pwd)/getsrc.yaml:/app/getsrc.yaml r.sheff.online/sheff/getsrc:latest 
+```
