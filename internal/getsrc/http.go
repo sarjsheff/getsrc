@@ -3,12 +3,12 @@ package getsrc
 import (
 	"crypto/md5"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"os"
 	"path"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/dustin/go-humanize"
@@ -21,15 +21,17 @@ type HttpObject struct {
 	Start   time.Time
 	Config  *Config
 	SubPath string
+	Path    string
 }
 
-func NewHttpObject(Repos *map[string]ConfigRepo, Repo *Repo, config *Config, subpath string) *HttpObject {
+func NewHttpObject(Repos *map[string]ConfigRepo, Repo *Repo, config *Config, subpath string, rawpath string) *HttpObject {
 	ret := &HttpObject{
 		Start:   time.Now(),
 		Repos:   Repos,
 		Repo:    Repo,
 		Config:  config,
 		SubPath: subpath,
+		Path:    rawpath,
 	}
 	return ret
 }
@@ -94,7 +96,14 @@ func NewHTTP(config *Config) (*HTTP, error) {
 }
 
 func (h *HTTP) ListHandler(w http.ResponseWriter, r *http.Request) {
-	err := h.listTmpl.Execute(w, NewHttpObject(h.config.Repos, nil, h.config, ""))
+	err := h.listTmpl.Execute(w, &HttpObject{
+		Start:   time.Now(),
+		Repos:   h.config.Repos,
+		Repo:    nil,
+		Config:  h.config,
+		SubPath: "",
+		Path:    r.URL.Path,
+	})
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(500)
@@ -154,7 +163,14 @@ func (h *HTTP) RegDumbHTTPRepo(name string, repopath string, config *Config) {
 			}
 		} else {
 			if p, ok := strings.CutPrefix(r.URL.Path, contextUrl); ok {
-				err = h.singleTmpl.Execute(w, NewHttpObject(nil, repo, config, p))
+				err = h.singleTmpl.Execute(w, &HttpObject{
+					Start:   time.Now(),
+					Repos:   nil,
+					Repo:    repo,
+					Config:  config,
+					SubPath: p,
+					Path:    r.URL.Path,
+				})
 				if err != nil {
 					log.Println(err)
 					w.WriteHeader(500)

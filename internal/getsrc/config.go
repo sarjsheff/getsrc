@@ -15,6 +15,7 @@ type Config struct {
 	Repos    *map[string]ConfigRepo `yaml:"repos"`
 	Cloneurl string                 `yaml:"cloneurl"`
 	Title    string                 `yaml:"title"`
+	Seo      *map[string]string
 }
 
 func NewConfig(configPath string) (*Config, error) {
@@ -37,6 +38,9 @@ func NewConfig(configPath string) (*Config, error) {
 	}
 	if config.Title == "" {
 		config.Title = "GetSrc"
+	}
+	if config.Seo == nil {
+		config.Seo = &map[string]string{}
 	}
 
 	return config, nil
