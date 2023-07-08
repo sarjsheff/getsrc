@@ -73,7 +73,7 @@ func (o *HttpObject) ExecTime() time.Duration {
 }
 
 // Конвертация markdown
-func (o *HttpObject) ToHtml(content string) string {
+func ToHtml(content string) string {
 	markdown := goldmark.New(
 		goldmark.WithExtensions(
 			extension.Table,
@@ -111,6 +111,11 @@ func (o *HttpObject) ToHtml(content string) string {
 	return buf.String()
 }
 
+// Человекочитаемый формат bytes
+func HumanBytes[K int64 | uint64](bytes K) string {
+	return humanize.Bytes(uint64(bytes))
+}
+
 type HTTP struct {
 	singleTmpl *template.Template
 	listTmpl   *template.Template
@@ -120,13 +125,18 @@ type HTTP struct {
 func NewHTTP(config *Config) (*HTTP, error) {
 	ret := &HTTP{config: config}
 
-	tmpls, err := template.ParseFiles("./tmpl/single.go.html", "./tmpl/icons.go.html", "./tmpl/common.go.html", "./tmpl/gen.go.html")
+	tf := template.FuncMap{
+		"toHtml":     ToHtml,
+		"humanBytes": HumanBytes[int64],
+	}
+
+	tmpls, err := template.New("single.go.html").Funcs(tf).ParseFiles("./tmpl/single.go.html", "./tmpl/icons.go.html", "./tmpl/common.go.html", "./tmpl/gen.go.html")
 	if err != nil {
 		return nil, err
 	}
 	ret.singleTmpl = tmpls
 
-	tmpls, err = template.ParseFiles("./tmpl/list.go.html", "./tmpl/icons.go.html", "./tmpl/common.go.html", "./tmpl/gen.go.html")
+	tmpls, err = template.New("list.go.html").Funcs(tf).ParseFiles("./tmpl/list.go.html", "./tmpl/icons.go.html", "./tmpl/common.go.html", "./tmpl/gen.go.html")
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +154,7 @@ func NewHTTP(config *Config) (*HTTP, error) {
 }
 
 func (h *HTTP) ListHandler(w http.ResponseWriter, r *http.Request) {
-	err := h.listTmpl.Execute(w, &HttpObject{
+	err := h.listTmpl.ExecuteTemplate(w, "list.go.html", &HttpObject{
 		Start:   time.Now(),
 		Repos:   h.config.Repos,
 		Repo:    nil,
@@ -211,7 +221,7 @@ func (h *HTTP) RegDumbHTTPRepo(name string, repopath string, config *Config) {
 			}
 		} else {
 			if p, ok := strings.CutPrefix(r.URL.Path, contextUrl); ok {
-				err = h.singleTmpl.Execute(w, &HttpObject{
+				err = h.singleTmpl.ExecuteTemplate(w, "single.go.html", &HttpObject{
 					Start:   time.Now(),
 					Repos:   nil,
 					Repo:    repo,

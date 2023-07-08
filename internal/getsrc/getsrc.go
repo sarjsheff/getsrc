@@ -1,11 +1,17 @@
 package getsrc
 
 import (
+	"bufio"
+	"bytes"
 	"io"
 	"log"
 	"sort"
 	"strings"
 
+	"github.com/alecthomas/chroma"
+	"github.com/alecthomas/chroma/formatters/html"
+	"github.com/alecthomas/chroma/lexers"
+	"github.com/alecthomas/chroma/styles"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
@@ -19,13 +25,56 @@ type GitObject struct {
 	Paths   []string
 	IsFile  bool
 	Files   []object.TreeEntry
+	File    *object.File
 	Repo    *Repo
 	Readme  string
+	Type    string
+	Lexer   chroma.Lexer
 }
 
 type Repo struct {
 	Repo *git.Repository
 	Name string
+}
+
+// Подсветка синтаксиса
+func (git *GitObject) ToHtml() string {
+	if git.IsFile && git.File.Size < 10*1024*1024 {
+		if content, err := git.File.Contents(); err == nil {
+			var b bytes.Buffer
+			wrt := bufio.NewWriter(&b)
+
+			style := styles.Get("github")
+			if style == nil {
+				style = styles.Fallback
+			}
+			formatter := html.New(html.WithClasses(true),
+				html.ClassPrefix("hl"),
+				html.WithLineNumbers(true),
+				html.LinkableLineNumbers(true, ""))
+
+			if iterator, err := git.Lexer.Tokenise(nil, content); err == nil {
+				wrt.WriteString("<style>")
+				formatter.WriteCSS(wrt, style)
+				wrt.WriteString("</style>")
+				if err := formatter.Format(wrt, style, iterator); err == nil {
+					wrt.Flush()
+					return b.String()
+				} else {
+					log.Println("ToHtml:", err)
+					return ""
+				}
+			} else {
+				log.Println("ToHtml:", err)
+				return ""
+			}
+		} else {
+			log.Println("ToHtml:", err)
+			return ""
+		}
+	} else {
+		return ""
+	}
 }
 
 func NewRepo(name string, path string) (*Repo, error) {
@@ -42,21 +91,21 @@ func (rr *Repo) GetGitObject(subpath string) *GitObject {
 
 	h, err := rr.Repo.Head()
 	if err != nil {
-		log.Println(err)
+		log.Println("GetGitObject RepoHead:", err)
 		ret.IsFound = false
 		return ret
 	}
 
 	c, err := rr.Repo.CommitObject(h.Hash())
 	if err != nil {
-		log.Println(err)
+		log.Println("GetGitObject CommitObject:", err)
 		ret.IsFound = false
 		return ret
 	}
 
 	tree, err := c.Tree()
 	if err != nil {
-		log.Println(err)
+		log.Println("GetGitObject Tree:", err)
 		ret.IsFound = false
 		return ret
 	}
@@ -73,8 +122,19 @@ func (rr *Repo) GetGitObject(subpath string) *GitObject {
 			return ret
 		}
 
+		if fl, err := tree.File(subpath); err == nil {
+			ret.File = fl
+		}
+
+		ret.Lexer = lexers.Match(te.Name)
+		if ret.Lexer == nil {
+			ret.Lexer = lexers.Get("txt")
+		}
+		ret.Type = ret.Lexer.Config().Name
+
 		ret.IsFile = te.Mode.IsFile()
 		ret.Name = te.Name
+
 	} else {
 		ret.IsFile = false
 	}

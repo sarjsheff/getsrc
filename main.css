@@ -5,7 +5,7 @@
 @layer base {
 
     .readme p {
-            @apply py-2;        
+        @apply py-2;        
     }
 
     .readme h1 {
@@ -34,6 +34,11 @@
     pre {
         @apply pt-3 pb-3 px-2 rounded-xl text-slate-900 mb-3 bg-slate-50 shadow-inner overflow-x-auto text-sm;
     }
+
+    pre.hlchroma {
+        @apply w-full p-0 rounded-none text-slate-900 m-0 bg-inherit shadow-none overflow-x-auto text-sm;
+    }
+
     .mermaid {
         @apply bg-inherit ring-0 mx-auto flex justify-center;
     }

@@ -127,3 +127,17 @@
     </div>
 </footer>
 {{end}}
+
+{{/* File panel */}}
+{{define "viewFile"}}
+  {{if .IsFile }}  
+    <div class="w-full grow flex flex-row items-stretch border-t justify-stretch p-4">
+      {{/* <pre class="hlchroma"></pre> */}}
+      {{.ToHtml}}
+    </div>
+  {{else if .Readme }}
+    <div class="border rounded shadow mt-4 p-4 readme">
+      {{ toHtml .Readme }}
+    </div>
+  {{end}}
+{{end}}
